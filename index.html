@@ -1,0 +1,266 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+  <title>Hello World</title>
+</head>
+<style>
+body {
+    padding: 0; margin: 0
+    }
+
+ canvas {
+   display: block;
+   background-color: blue; 
+   border-style: groove;
+  border-width: 7px;
+  border-color: coral;  
+  max-width: 90%;
+  }
+   
+   
+</style>
+
+<body onload="calcArea()">
+
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <div class="card  d-flex justify-content-center">
+        <div class="card-body">
+          <input style='border-style: none;' type="text" id="textfield1" value="Shapes"> 
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card  d-flex justify-content-center">
+      <div class="card-body">   
+        <p class="card-text" id="a"></p> 
+       </div>
+     </div>
+   </div>
+  </div>
+</div>
+<!--area calc -->
+<script>
+  function calcArea() {
+    var length = window.innerHeight;
+    var width = window.innerWidth;
+    var area= length * width ;
+    document.getElementById("a").innerHTML = "Area>" + area + "px";
+  }; 
+  </script>
+<!--PIXI STUFF -->
+<canvas id="myCanvas" class="mx-auto"></canvas>
+  <script type="text/javascript">
+  const canvas = document.getElementById("myCanvas");
+  const app = new PIXI.Application({
+      view: canvas,
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+
+    app.stage.interactive = true;
+  
+//graphics
+let drawings = [];
+
+function createCircle(){
+  let circle = new PIXI.Graphics();
+  circle.lineStyle(0); // draw a circle, set the lineStyle to zero so the circle doesn't have an outline
+  circle.beginFill(Math.random() * 0xFFFFFF, 1);
+  circle.drawCircle(Math.random() * 300, Math.random()*300, Math.random()*50);
+  return circle;
+}
+
+function createRectangle(){
+  let rectangle = new PIXI.Graphics();
+  rectangle.beginFill(Math.random() * 0xFFFFFF);
+  rectangle.drawRect(Math.random() * 700, Math.random()*700,Math.random()* 100, Math.random()*100);
+  rectangle.endFill();
+  return rectangle;
+}
+
+function createEllipse(){
+  let ellipse = new PIXI.Graphics();
+  ellipse.lineStyle(2, Math.random() * 0xFFFFFF, 1);
+  ellipse.beginFill(Math.random() * 0xFFFFFF, 1);
+  ellipse.drawEllipse(Math.random(), Math.random(), Math.random() * 80, Math.random() * 50);
+  ellipse.endFill();
+  return ellipse;
+}
+
+
+function createLines(){
+  let lines = new PIXI.Graphics();
+  lines.beginFill(Math.random() * 0xFFFFFF);
+  lines.lineStyle(4, Math.random() * 0xFFFFFF, 1);
+  lines.moveTo(Math.random()*50, Math.random()*350);
+  lines.lineTo(Math.random()*250, Math.random()*350);
+  lines.lineTo(Math.random()*200, Math.random()*300);
+  lines.x = Math.random() * app.screen.width;
+  lines.y = Math.random() * app.screen.height;
+  lines.lineTo(Math.random()*100, Math.random()*400);
+  //lines.lineTo(Math.random()*50, Math.random()*350);
+//  lines.lineTo(Math.random()*20, Math.random()*200);
+//  lines.closePath();
+  lines.endFill();
+  return lines;
+}
+
+function initializeObj(drawing){
+  drawing.direction = 0;
+  drawing.speed = 1 + Math.random() * 2;
+    //interactivity , which is necessary for the next lines(make shape disappear)
+  drawing.interactive = true;
+  drawing.buttonMode = true;
+  //make shape disappear on click
+  app.stage.addChild(drawing);
+  drawings.push(drawing);
+  deleteObj(drawing);
+}
+
+//remove obj on click
+function deleteObj(drawing){
+  drawing.on('click', (event) => {
+  app.stage.removeChild(drawing);
+  document.getElementById("textfield1").value= drawings.length + " shapes";
+  const index = drawings.indexOf(drawing);
+  drawings.splice(index, 1);
+  });
+}
+
+for(let i = 0; i < 10; i++){
+  let circle = createCircle();
+  initializeObj(circle);
+  
+  let rectangle = createRectangle();
+  initializeObj(rectangle);
+ 
+  let ellipse = createEllipse();
+  initializeObj(ellipse);
+ 
+  let lines = createLines();
+  initializeObj(lines);
+ 
+}
+
+
+
+// Just click on the stage to draw random graphics
+window.app = app;
+app.renderer.plugins.interaction.on('pointerdown', onMouseDown);
+const choice = [createCircle, createRectangle, createEllipse, createLines]; 
+
+function onMouseDown(e) {  
+  if(e.target === e.currentTarget) {
+    
+    const randomChoice = choice[Math.floor(Math.random() * choice.length)];
+    let position = e.data.global;
+    let whatever = randomChoice();
+   
+      whatever.x = position.x;
+      whatever.y = position.y;
+  
+      initializeObj(whatever);
+      document.getElementById("textfield1").value= drawings.length + " shapes";
+     
+    };
+};
+
+//rain of objects
+const drawingsPadding = 500;
+const drawingsLimit = new PIXI.Rectangle(-drawingsPadding,
+    -drawingsPadding,
+    app.screen.width + drawingsPadding,
+    app.screen.height + drawingsPadding );
+
+    app.ticker.add(() => {
+    for (let i = 0; i < drawings.length; i++) {
+        const graph = drawings[i];
+
+       
+        graph.y += graph.speed;
+
+        if (graph.y < drawingsLimit.y) {
+          graph.y += drawingsLimit.height;
+        } else if (graph.y > drawingsLimit.y + drawingsLimit.height) {
+          graph.y -= drawingsLimit.height;
+        }
+    }
+});
+
+</script>
+
+<div class="container">
+  <div class="row">
+    <div class="col d-flex justify-content-center">
+      <div class="btn-group btn-group-toggle" data-toggle="buttons">
+        <label class="btn btn-primary active" onclick="addBtnPressed()" data-toggle="tooltip" data-placement="top" title="ADD NEW SHAPE">
+          <input type="radio" name="options" id="option1" checked> +
+        </label>
+        <label class="btn btn-danger" onclick="removeBtnPressed()" data-toggle="tooltip" data-placement="top" title="REMOVE SHAPE">
+          <input type="radio" name="options" id="option2"> -
+        </label>
+      </div>
+    </div>
+
+    <div class="col col d-flex justify-content-center">
+      <div class="btn-group btn-group-toggle" data-toggle="buttons">
+        <label class="btn btn-primary active" onclick="increaseSpeed()" data-toggle="tooltip" data-placement="top" title="Increase SPEED for a shape">
+          <input type="radio" name="options" id="option1" checked> +
+        </label>
+        <label class="btn btn-danger" onclick="decreaseSpeed()" data-toggle="tooltip" data-placement="top" title="Decrease Speed of a shape">
+          <input type="radio" name="options" id="option2"> -
+        </label>
+      </div>
+    </div>
+
+  </div>
+</div>
+      <script>
+        function addBtnPressed(e) {  
+          const randomChoice = choice[Math.floor(Math.random() * choice.length)];
+          let whatever = randomChoice();
+          initializeObj(whatever);
+          console.log(randomChoice);
+          //this is for the display of objects
+          console.log(drawings.length);
+          document.getElementById("textfield1").value= drawings.length + " shapes";
+      };
+
+      const drawing = drawings[drawings.length - 1];
+
+      function removeBtnPressed(e){
+        //const drawing = drawings[0];
+        app.stage.removeChild(drawing);
+        document.getElementById("textfield1").value= drawings.length + " shapes";
+        const index = drawings.indexOf(drawing);
+        drawings.splice(index, 1);
+      }
+
+    
+      function increaseSpeed(){
+          
+          drawings.speed = drawing.speed ++ ;
+          console.log(drawing.speed);
+  
+        } 
+       
+  
+
+        function decreaseSpeed(){
+          drawings.speed = drawing.speed --;
+          console.log(drawing.speed);
+        }
+
+        
+
+      </script>
+
+</body>
+</html>
